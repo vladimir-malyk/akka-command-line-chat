@@ -44,7 +44,7 @@ class Room extends FSM[Room.State, Room.Data] with ActorLogging {
       */
     case Event(msg@Command.Subscribe(_, _, _), stateData: Data.Active) =>
       for ((visitor: ActorRef, name: String) <- stateData.visitors) {
-        visitor ! Visitor.Message.Out(s"ROOM[${stateData.id}] ${msg.name} joined room.")
+        visitor ! Visitor.Message.Out(s"ROOM[${stateData.id}] ${msg.name} has joined the room.")
       }
       msg.sender ! Visitor.Message.Out(s"ROOM[${stateData.id}] Welcome, ${msg.name}!")
       stay using stateData.copy(

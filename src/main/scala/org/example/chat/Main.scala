@@ -13,7 +13,7 @@ object Main {
 
     val rooms = system.actorOf(RoomSupervisor.props(), "rooms")
 
-    val server = system.actorOf(Server.props("localhost", 7777), "front")
+    val server = system.actorOf(Server.props("localhost", 1980), "front")
 
   }
 

@@ -32,11 +32,11 @@ class Visitor(connection: ActorRef) extends Actor with ActorLogging {
     */
   def receive = {
     case Message.Greeting =>
-      connection ! encode("Welcome! Enter your name.")
+      connection ! encode("Welcome! Enter your name:")
     case Tcp.Received(data) =>
       val message = decode(data)
       name = message
-      connection ! encode(s"$name, enter room name.")
+      connection ! encode(s"$name, enter room name:")
       context.become(chooseRoomState)
   }
 
