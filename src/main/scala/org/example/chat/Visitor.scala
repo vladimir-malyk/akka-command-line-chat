@@ -3,6 +3,7 @@ package org.example.chat
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.io.Tcp
 import akka.util.ByteString
+import akka.cluster.sharding.ClusterSharding
 
 /**
   * Visitor. One for each socket connection.
@@ -12,10 +13,7 @@ class Visitor(connection: ActorRef) extends Actor with ActorLogging {
 
   import Visitor._
 
-  /**
-    * Rooms supervisor
-    */
-  val rooms = context.system.actorSelection("akka://server/user/rooms")
+  val roomRegion = ClusterSharding(context.system).shardRegion(Room.shardName)
 
   /**
     * Visitor name
@@ -47,7 +45,7 @@ class Visitor(connection: ActorRef) extends Actor with ActorLogging {
     case Tcp.Received(data) =>
       val message = decode(data)
       room = message
-      rooms ! Room.Command.Subscribe(self, room, name)
+      roomRegion ! Room.Command.Subscribe(self, room, name)
       sender ! nr
       context.become(inRoomState)
   }
@@ -58,12 +56,12 @@ class Visitor(connection: ActorRef) extends Actor with ActorLogging {
   def inRoomState: Receive = {
     case Tcp.Received(data) =>
       val message = decode(data)
-      rooms ! Room.Command.Message(self, room, message)
+      roomRegion ! Room.Command.Message(self, room, message)
       sender ! nr
     case Visitor.Message.Out(message) =>
       connection ! encode(message)
     case Tcp.PeerClosed =>
-      rooms ! Room.Command.Leave(self, room)
+      roomRegion ! Room.Command.Leave(self, room)
       context stop self
     case x => log.info(s"Visitor Unhandled: $x")
   }
