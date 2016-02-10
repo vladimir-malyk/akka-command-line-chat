@@ -2,14 +2,21 @@
 
 ## Agenda
 
-Simple command-line chat demonstration.
-It's meant to be played with telnet localhost 7777
+Cluster sharded command-line chat demonstration.
+
+http://www.slideshare.net/vladimirmalyk/reactive-programming-with-akka-and-scala
+
+It's meant to be played with
+* telnet localhost 1981
+* telnet localhost 1982
 
 ## Implementation
 
-* TCP Server creates new Visitor per TCP connection.
-* Visitor lifecycle (ask name and room) implemented with context.become FSM pattern.
-* Room lifecycle (initialization, broadcasting/subscribing/unsubscribing) implemented with akka.actor.FSM pattern and immutable datastructures.
+* Two cluster actor systems, running on the same JVM.
+* Two TCP Servers are listening for incoming connections (localhost:1981 and localhost:1981).
+* Each TCP Server creates new Visitor per TCP connection.
+* Visitor lifecycle (ask name and room) is implemented with context.become FSM pattern.
+* Room lifecycle (initialization, broadcasting/subscribing/unsubscribing) is implemented with akka.actor.FSM pattern and immutable data structures.
 
 ## Tech
 
@@ -18,5 +25,4 @@ It's meant to be played with telnet localhost 7777
 
 ## TODO
 
-* Shard Room Actors with akka-cluster-sharding
 * demonstrate Actors Cake Pattern

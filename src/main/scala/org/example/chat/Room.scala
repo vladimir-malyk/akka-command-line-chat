@@ -3,6 +3,7 @@ package org.example.chat
 import akka.actor._
 
 import scala.collection.immutable
+import akka.cluster.sharding.ShardRegion
 
 /**
   * Chat room
@@ -99,10 +100,27 @@ object Room {
   def props() = Props(new Room())
 
   /**
-    * Extract destination Room id from message
+    * Number of shards
     */
-  val idExtractor: PartialFunction[Any, String] = {
-    case msg: Command => msg.id
+  val numberOfShards = 2
+
+  /**
+    * Shard Name
+    */
+  val shardName: String = "org.example.chat.Room"
+
+  /**
+    * Shard Id extractor
+    */
+  val idExtractor: ShardRegion.ExtractEntityId = {
+    case cmd: Command => (cmd.id, cmd)
+  }
+
+  /**
+    * Shard resolver
+    */
+  val shardResolver: ShardRegion.ExtractShardId = {
+    case cmd: Command => (math.abs(cmd.id.hashCode) % numberOfShards).toString
   }
 
   /**
