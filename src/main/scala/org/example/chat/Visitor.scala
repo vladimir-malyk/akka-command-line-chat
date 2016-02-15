@@ -45,7 +45,7 @@ class Visitor(connection: ActorRef) extends Actor with ActorLogging {
     case Tcp.Received(data) =>
       val message = decode(data)
       room = message
-      roomRegion ! Room.Command.Subscribe(self, room, name)
+      roomRegion ! Room.Command.Subscribe(room, name)
       sender ! nr
       context.become(inRoomState)
   }
@@ -56,12 +56,12 @@ class Visitor(connection: ActorRef) extends Actor with ActorLogging {
   def inRoomState: Receive = {
     case Tcp.Received(data) =>
       val message = decode(data)
-      roomRegion ! Room.Command.Message(self, room, message)
+      roomRegion ! Room.Command.Message(room, message)
       sender ! nr
     case Visitor.Message.Out(message) =>
       connection ! encode(message)
     case Tcp.PeerClosed =>
-      roomRegion ! Room.Command.Leave(self, room)
+      roomRegion ! Room.Command.Leave(room)
       context stop self
     case x => log.info(s"Visitor Unhandled: $x")
   }

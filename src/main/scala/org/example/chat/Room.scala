@@ -28,9 +28,9 @@ class Room extends FSM[Room.State, Room.Data] with ActorLogging {
       * Setup Room id.
       * Subscribe Visitor.
       */
-    case Event(msg@Command.Subscribe(_, _, _), _) =>
-      msg.sender ! Visitor.Message.Out(s"ROOM[${msg.id}]> Welcome, ${msg.name}!")
-      goto(State.Active) using Data.Active(msg.id, immutable.HashMap(msg.sender -> msg.name))
+    case Event(msg@Command.Subscribe(_, _), _) =>
+      sender ! Visitor.Message.Out(s"ROOM[${msg.id}]> Welcome, ${msg.name}!")
+      goto(State.Active) using Data.Active(msg.id, immutable.HashMap(sender -> msg.name))
 
   }
 
@@ -43,22 +43,22 @@ class Room extends FSM[Room.State, Room.Data] with ActorLogging {
     /**
       * Subscribe new Visitor and notify subscribed Visitors.
       */
-    case Event(msg@Command.Subscribe(_, _, _), stateData: Data.Active) =>
+    case Event(msg@Command.Subscribe(_, _), stateData: Data.Active) =>
       for ((visitor: ActorRef, name: String) <- stateData.visitors) {
         visitor ! Visitor.Message.Out(s"ROOM[${stateData.id}] ${msg.name} has joined the room.")
       }
-      msg.sender ! Visitor.Message.Out(s"ROOM[${stateData.id}] Welcome, ${msg.name}!")
+      sender ! Visitor.Message.Out(s"ROOM[${stateData.id}] Welcome, ${msg.name}!")
       stay using stateData.copy(
-        visitors = stateData.visitors + (msg.sender -> msg.name)
+        visitors = stateData.visitors + (sender -> msg.name)
       )
 
     /**
       * Broadcast received message.
       */
-    case Event(msg@Command.Message(_, _, message), stateData: Data.Active) =>
-      stateData.visitors.get(msg.sender) match {
+    case Event(msg@Command.Message(_, message), stateData: Data.Active) =>
+      stateData.visitors.get(sender) match {
         case Some(senderName) =>
-          for ((visitor, name) <- stateData.visitors if visitor != msg.sender) {
+          for ((visitor, name) <- stateData.visitors if visitor != sender) {
             visitor ! Visitor.Message.Out(s"[$senderName] $message")
           }
         case None =>
@@ -68,10 +68,10 @@ class Room extends FSM[Room.State, Room.Data] with ActorLogging {
     /**
       * Unsubscribe Visitor and notify subscribed Visitors.
       */
-    case Event(msg@Command.Leave(_, _), stateData: Data.Active) =>
-      stateData.visitors.get(msg.sender) match {
+    case Event(msg@Command.Leave(_), stateData: Data.Active) =>
+      stateData.visitors.get(sender) match {
         case Some(senderName) =>
-          for ((visitor, name) <- stateData.visitors if visitor != msg.sender) {
+          for ((visitor, name) <- stateData.visitors if visitor != sender) {
             visitor ! Visitor.Message.Out(s"ROOM[${stateData.id}] Visitor $senderName left room.")
           }
         case None =>
@@ -133,14 +133,6 @@ object Room {
     * Room commands
     */
   sealed trait Command {
-
-    /**
-      * Sender ref
-      * TODO substitute sender when RoomSupervisor proxying
-      * @return
-      */
-    def sender: ActorRef
-
     /**
       * Destination Room Id
       * @return
@@ -153,28 +145,25 @@ object Room {
     /**
       * Subscribe
       *
-      * @param sender Visitor ref
       * @param id Room id
       * @param name Visitor name
       */
-    final case class Subscribe(sender: ActorRef, id: String, name: String) extends Command
+    final case class Subscribe(id: String, name: String) extends Command
 
     /**
       * Leave Room
       *
-      * @param sender Visitor ref
       * @param id Room id
       */
-    final case class Leave(sender: ActorRef, id: String) extends Command
+    final case class Leave(id: String) extends Command
 
     /**
       * Chat Message
       *
-      * @param sender Visitor ref
       * @param id Room id
       * @param message Chat message
       */
-    final case class Message(sender: ActorRef, id: String, message: String) extends Command
+    final case class Message(id: String, message: String) extends Command
 
   }
 
